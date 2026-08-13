@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Rewind Chat",
+  "version": "1.0.0",
+  "description": "Ferramenta interna da Next Fit para gerar resumos (breve, normal ou detalhado) de atendimentos de suporte.",
+  "author": "Next Fit",
+  "permissions": ["storage", "sidePanel"],
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*",
+    "https://*.freshchat.com/*",
+    "https://*.freshworks.com/*",
+    "https://api.freshchat.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "Abrir Rewind Chat"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
