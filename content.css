@@ -27,30 +27,36 @@
   font-family: "Segoe UI", -apple-system, Roboto, Helvetica, Arial, sans-serif;
 }
 
-.rwc-inline-btn {
-  all: unset;
+#rwc-launcher-button.rwc-inline-btn {
   box-sizing: border-box;
-  position: fixed;
-  z-index: 2147483000;
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(0, 0, 0, 0.16);
-  border-radius: 6px;
   background: #fff;
-  color: #33313a;
-  cursor: pointer !important;
+  border: 1px solid #cfd7df;
+  border-radius: 4px;
+  color: #12344d;
+  cursor: pointer;
+  display: inline-flex;
   flex-shrink: 0;
-  pointer-events: auto !important;
-  opacity: 1 !important;
-  filter: none !important;
-  transition: background 0.15s, border-color 0.15s;
+  font: 600 12px/1 sans-serif;
+  height: 32px;
+  justify-content: center;
+  margin-right: 8px;
+  padding: 0;
+  width: 32px;
 }
-.rwc-inline-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  border-color: rgba(0, 0, 0, 0.3);
+#rwc-launcher-button.rwc-inline-btn svg {
+  fill: currentColor;
+  height: 17px;
+  pointer-events: none;
+  width: 17px;
+}
+#rwc-launcher-button.rwc-inline-btn:hover {
+  background: #f5f7f9;
+  border-color: #9aa8b5;
+}
+#rwc-launcher-button.rwc-inline-btn:focus-visible {
+  outline: 2px solid #2c5cc5;
+  outline-offset: 2px;
 }
 .rwc-inline-btn.rwc-btn--loading {
   opacity: 0.5 !important;

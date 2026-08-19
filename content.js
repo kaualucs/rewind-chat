@@ -417,15 +417,15 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     }
   }
 
-  const ICONE_RESUMO = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>`;
+  const ICONE_RESUMO = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Zm1 7V3.5L20.5 9H15ZM8 13h8v1.5H8V13Zm0 4h6v1.5H8V17Z"/></svg>`;
 
   function criarBotaoInline() {
-    const botao = document.createElement("div");
+    const botao = document.createElement("button");
     botao.id = "rwc-launcher-button";
+    botao.type = "button";
     botao.className = "rwc-inline-btn";
     botao.title = "Rewind Chat — gerar resumo do atendimento";
-    botao.setAttribute("role", "button");
-    botao.setAttribute("tabindex", "0");
+    botao.setAttribute("aria-label", "Gerar resumo do atendimento");
     botao.innerHTML = ICONE_RESUMO;
     const acionar = (e) => {
       e.preventDefault();
@@ -439,78 +439,51 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     return botao;
   }
 
-  const ROTULOS_BOTAO_STATUS = [
-    "abrir",
-    "aberto",
-    "abertos",
-    "resolvido",
-    "resolvidos",
-    "fechado",
-    "fechados",
-    "pendente",
-    "pendentes",
-  ];
-
-  // O botão nativo "Copiar conversa" tem um id fixo e único no HTML do
-  // Freshworks — a âncora mais confiável disponível. O atributo de teste do
-  // dropdown de status e a busca por texto ficam como reserva, nessa ordem.
-  function encontrarBotaoAncora() {
+  // Com o FreshTools instalado, o botão fica logo após o "Copiar conversa".
+  // Sem ele, usamos exatamente o ponto em que o FreshTools o criaria: antes
+  // do contêiner do menu de três pontos. Assim não depende da extensão.
+  function encontrarPontoDeInsercao() {
     const porId = document.getElementById("fd-copy-ai-conversation");
-    if (porId) return porId;
+    if (porId) return { referencia: porId, posicao: "afterend" };
 
-    const porAtributo = document.querySelector('[data-test-label="conversationStateTitle"]');
-    if (porAtributo) return porAtributo;
+    const menu = document.querySelector('[data-test-id="hamburger-menu"]');
+    if (menu && menu.parentElement) {
+      return { referencia: menu.parentElement, posicao: "beforebegin" };
+    }
 
-    const candidatos = document.querySelectorAll("button, [role='button']");
-    let melhor = null;
-    let maiorTop = -Infinity;
-    candidatos.forEach((b) => {
-      const texto = limparTexto(b.textContent).toLowerCase();
-      if (!ROTULOS_BOTAO_STATUS.includes(texto)) return;
-      const r = b.getBoundingClientRect();
-      if (r.width === 0 || r.height === 0) return;
-      if (r.top < 0 || r.top > window.innerHeight) return;
-      if (r.top > maiorTop) {
-        maiorTop = r.top;
-        melhor = b;
-      }
-    });
-    return melhor;
+    return null;
   }
 
-  const LARGURA_BOTAO = 30;
-  const ESPACO_BOTAO = 6;
-
-  // Recalcula a posição só quando o botão é criado ou a conversa troca —
-  // recalcular toda hora é o que fazia parecer que ele "flutuava" na tela.
-  let posicaoFixada = false;
-
+  // O Freshworks recria o cabeçalho da conversa com frequência. Mantemos o
+  // launcher no mesmo fluxo dos controles nativos para ele acompanhá-los.
   function posicionarBotao() {
-    const ancora = encontrarBotaoAncora();
-    if (!ancora) {
+    const ponto = encontrarPontoDeInsercao();
+    if (!ponto) {
       if (botaoEl) botaoEl.style.display = "none";
       return;
     }
 
     if (!botaoEl || !botaoEl.isConnected) {
       botaoEl = criarBotaoInline();
-      document.body.appendChild(botaoEl);
-      posicaoFixada = false;
     }
     botaoEl.style.display = "inline-flex";
 
-    if (posicaoFixada) return;
-    const rect = ancora.getBoundingClientRect();
-    botaoEl.style.top = `${rect.top}px`;
-    botaoEl.style.left = `${rect.left - LARGURA_BOTAO - ESPACO_BOTAO}px`;
-    posicaoFixada = true;
+    const { referencia, posicao } = ponto;
+    const estaNoLugar =
+      posicao === "afterend"
+        ? botaoEl.previousElementSibling === referencia
+        : botaoEl.nextElementSibling === referencia;
+
+    // Reinsere somente se o Freshworks tiver trocado a âncora ou seu container.
+    if (!estaNoLugar) {
+      referencia.insertAdjacentElement(posicao, botaoEl);
+    }
   }
 
   function verificarTrocaDeUrl() {
     if (location.href === urlAtual) return;
     urlAtual = location.href;
     tipoEmAndamento = null;
-    posicaoFixada = false;
     if (painelEl) {
       painelEl.querySelector("#rwc-result").classList.add("rwc-hidden");
       esconderStatus();
