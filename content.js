@@ -1,13 +1,6 @@
 (function () {
   "use strict";
 
-  /* ==========================================================================
-     Rewind Chat — Next Fit
-     Content script: injeta o botão flutuante na tela de atendimento, lê a
-     conversa direto do DOM (sem API do Freshchat) e abre o painel de resumo
-     com IA.
-     ========================================================================== */
-
   const SELECTORS = {
     messageItem: "li.user-messages",
     agentMessage: ".fc-agent-message",
@@ -58,9 +51,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
   let tipoEmAndamento = null;
   let urlAtual = location.href;
 
-  /* ==========================================================================
-     Leitura da conversa (DOM)
-     ========================================================================== */
   function limparTexto(txt) {
     return (txt || "").replace(/ /g, " ").replace(/\s+/g, " ").trim();
   }
@@ -84,9 +74,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     return limparTexto(item.textContent);
   }
 
-  // Mensagens de áudio (nota de voz) não têm texto na bolha, só um player.
-  // O <audio> real fica escondido atrás do player customizado; pega a URL
-  // de lá (direto no src ou num <source> filho).
   function encontrarUrlAudio(item) {
     const audioEl = item.querySelector("audio");
     if (!audioEl) return null;
@@ -112,9 +99,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     return mensagens;
   }
 
-  // Rede de segurança caso a tela troque as classes do widget de conversa:
-  // procura qualquer bolha com "message" no nome da classe e tenta inferir o
-  // autor pelas classes dos elementos ancestrais.
   function coletarMensagensFallback() {
     const candidatos = document.querySelectorAll("[class*='message']");
     const mensagens = [];
@@ -161,9 +145,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     return m.tipo === "audio" ? `${m.autor}::audio::${m.url}` : `${m.autor}::${m.texto}`;
   }
 
-  // Ao rolar para cima, mensagens antigas são pré-carregadas no topo do DOM.
-  // Como a posição de cada bolha muda a cada nova coleta, a dedupe usa
-  // autor+conteúdo (contando repetições) em vez de um índice de posição.
   function mesclarMensagens(existentes, novasMsgs) {
     const contagemExistentes = new Map();
     existentes.forEach((m) => {
@@ -201,11 +182,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     return mensagens;
   }
 
-  // Monta as "parts" do pedido ao Gemini intercalando texto com os áudios na
-  // ordem em que aparecem na conversa — cada áudio vira uma part separada
-  // (o download/base64 real é feito no background, aqui só fica um
-  // placeholder com a URL) e o texto ao redor dá contexto pra IA sobre de
-  // quem é a mensagem antes de "ouvir" o áudio.
   function montarPartesPrompt(tipo, mensagens) {
     const partes = [];
     let bufferTexto = `${CONTEXTO}\n\n${PROMPTS[tipo]}\n\n=== TRANSCRIÇÃO DO ATENDIMENTO ===\n`;
@@ -226,9 +202,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     return partes;
   }
 
-  /* ==========================================================================
-     Formatação de saída (negrito seguro)
-     ========================================================================== */
   function formatarSaida(texto) {
     const escapado = texto
       .replace(/&/g, "&amp;")
@@ -237,9 +210,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     return escapado.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   }
 
-  /* ==========================================================================
-     Painel — criação e controle
-     ========================================================================== */
   function criarPainel() {
     const painel = document.createElement("div");
     painel.id = "rwc-panel";
@@ -321,9 +291,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     painelEl.querySelector("#rwc-settings").classList.toggle("rwc-hidden");
   }
 
-  /* ==========================================================================
-     Configurações (chave do Gemini)
-     ========================================================================== */
   async function inicializarConfiguracoes() {
     const campo = painelEl.querySelector("#rwc-gemini-key");
     const { geminiKey } = await chrome.storage.local.get("geminiKey");
@@ -331,8 +298,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
       campo.value = geminiKey;
       return;
     }
-    // Sem chave salva ainda: tenta semear a partir de config.local.js (via
-    // background) e, se não achar nada, avisa o agente na área de config.
     const resposta = await chrome.runtime
       .sendMessage({ type: "rwc-obter-config-inicial" })
       .catch(() => null);
@@ -360,9 +325,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     setTimeout(() => painelEl.querySelector("#rwc-settings-status").classList.add("rwc-hidden"), 2000);
   }
 
-  /* ==========================================================================
-     Estados de tela
-     ========================================================================== */
   function mostrarStatus(tipo, mensagem) {
     const el = painelEl.querySelector("#rwc-status");
     el.className = `rwc-status rwc-status--${tipo}`;
@@ -387,9 +349,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     if (botaoEl) botaoEl.classList.toggle("rwc-btn--loading", carregando);
   }
 
-  /* ==========================================================================
-     Fluxo principal
-     ========================================================================== */
   async function gerarResumo(tipo) {
     abrirPainel();
     marcarTipoAtivo(tipo);
@@ -455,20 +414,11 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
       btn.textContent = "Copiado!";
       setTimeout(() => (btn.textContent = original), 1500);
     } catch (_) {
-      /* ignora falha de clipboard */
     }
   }
 
-  /* ==========================================================================
-     Botão — injetado na barra de ações do atendimento (ao lado do lápis/
-     reticências/"Abrir"), com a mesma estética dos ícones nativos.
-     ========================================================================== */
   const ICONE_RESUMO = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>`;
 
-  // Usa <div role="button"> em vez de <button>: em atendimentos resolvidos a
-  // barra de ações fica dentro de um contêiner desabilitado (fieldset/CSS),
-  // o que bloquearia cliques num <button> nativo mesmo com o nosso próprio
-  // listener. Uma div não sofre esse bloqueio automático do navegador.
   function criarBotaoInline() {
     const botao = document.createElement("div");
     botao.id = "rwc-launcher-button";
@@ -489,11 +439,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     return botao;
   }
 
-  // O dropdown de status (ao lado do lápis/reticências) é o elemento mais
-  // estável pra achar a barra de ações. O texto dele muda conforme o estado
-  // da conversa ("Abrir", "Resolvidos", "Fechados", "Pendentes"...), então a
-  // busca é por uma lista de rótulos conhecidos, não por um texto fixo. Pega
-  // o último da tela porque pode haver conversas antigas acima da ativa.
   const ROTULOS_BOTAO_STATUS = [
     "abrir",
     "aberto",
@@ -506,45 +451,43 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     "pendentes",
   ];
 
-  function encontrarBotaoStatus() {
+  // O botão nativo "Copiar conversa" tem um id fixo e único no HTML do
+  // Freshworks — a âncora mais confiável disponível. O atributo de teste do
+  // dropdown de status e a busca por texto ficam como reserva, nessa ordem.
+  function encontrarBotaoAncora() {
+    const porId = document.getElementById("fd-copy-ai-conversation");
+    if (porId) return porId;
+
+    const porAtributo = document.querySelector('[data-test-label="conversationStateTitle"]');
+    if (porAtributo) return porAtributo;
+
     const candidatos = document.querySelectorAll("button, [role='button']");
-    let ultimo = null;
+    let melhor = null;
+    let maiorTop = -Infinity;
     candidatos.forEach((b) => {
       const texto = limparTexto(b.textContent).toLowerCase();
-      if (ROTULOS_BOTAO_STATUS.includes(texto)) ultimo = b;
-    });
-    return ultimo;
-  }
-
-  // Entre os botões da MESMA linha (mesmo topo na tela, tolerância apertada)
-  // à esquerda do botão de status, pega o mais à esquerda de todos — que é
-  // sempre o lápis. Só considera candidatos do tamanho de um ícone (evita
-  // pegar algo grande/errado de outra parte da tela por coincidência).
-  function encontrarPrimeiroIconeDaBarra(statusBtn) {
-    const rectStatus = statusBtn.getBoundingClientRect();
-    const candidatos = document.querySelectorAll("button, [role='button']");
-    let alvo = statusBtn;
-    let menorLeft = rectStatus.left;
-    candidatos.forEach((el) => {
-      if (el === botaoEl || el === statusBtn || el.contains(statusBtn) || statusBtn.contains(el)) return;
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 || r.height === 0 || r.width > 60 || r.height > 60) return;
-      const mesmaLinha = Math.abs(r.top - rectStatus.top) < 4;
-      const dentroDoAlcance = rectStatus.left - r.left < 250;
-      if (mesmaLinha && r.left < menorLeft && dentroDoAlcance) {
-        menorLeft = r.left;
-        alvo = el;
+      if (!ROTULOS_BOTAO_STATUS.includes(texto)) return;
+      const r = b.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return;
+      if (r.top < 0 || r.top > window.innerHeight) return;
+      if (r.top > maiorTop) {
+        maiorTop = r.top;
+        melhor = b;
       }
     });
-    return alvo;
+    return melhor;
   }
 
   const LARGURA_BOTAO = 30;
   const ESPACO_BOTAO = 6;
 
+  // Recalcula a posição só quando o botão é criado ou a conversa troca —
+  // recalcular toda hora é o que fazia parecer que ele "flutuava" na tela.
+  let posicaoFixada = false;
+
   function posicionarBotao() {
-    const statusBtn = encontrarBotaoStatus();
-    if (!statusBtn) {
+    const ancora = encontrarBotaoAncora();
+    if (!ancora) {
       if (botaoEl) botaoEl.style.display = "none";
       return;
     }
@@ -552,22 +495,22 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     if (!botaoEl || !botaoEl.isConnected) {
       botaoEl = criarBotaoInline();
       document.body.appendChild(botaoEl);
+      posicaoFixada = false;
     }
-
-    const alvo = encontrarPrimeiroIconeDaBarra(statusBtn);
-    const rect = alvo.getBoundingClientRect();
     botaoEl.style.display = "inline-flex";
+
+    if (posicaoFixada) return;
+    const rect = ancora.getBoundingClientRect();
     botaoEl.style.top = `${rect.top}px`;
     botaoEl.style.left = `${rect.left - LARGURA_BOTAO - ESPACO_BOTAO}px`;
+    posicaoFixada = true;
   }
 
-  /* ==========================================================================
-     Detecção de troca de conversa (SPA) — limpa resultado antigo
-     ========================================================================== */
   function verificarTrocaDeUrl() {
     if (location.href === urlAtual) return;
     urlAtual = location.href;
     tipoEmAndamento = null;
+    posicaoFixada = false;
     if (painelEl) {
       painelEl.querySelector("#rwc-result").classList.add("rwc-hidden");
       esconderStatus();
@@ -575,17 +518,12 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     }
   }
 
-  /* ==========================================================================
-     Inicialização
-     ========================================================================== */
   function iniciar() {
     posicionarBotao();
     setInterval(() => {
-      posicionarBotao();
       verificarTrocaDeUrl();
+      posicionarBotao();
     }, 1000);
-    document.addEventListener("scroll", posicionarBotao, true);
-    window.addEventListener("resize", posicionarBotao);
   }
 
   if (document.readyState === "loading") {

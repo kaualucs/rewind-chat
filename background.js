@@ -1,20 +1,11 @@
 "use strict";
 
-/* ==========================================================================
-   Rewind Chat — Next Fit
-   Service worker: única ponte com a internet da extensão. O content script
-   não pode chamar a API do Gemini diretamente (CSP da página do Freshchat),
-   então ele manda mensagem para cá e a gente faz o fetch por aqui.
-   ========================================================================== */
-
 async function obterChaveSalva() {
   const { geminiKey } = await chrome.storage.local.get("geminiKey");
   return geminiKey || "";
 }
 
-// Se o agente ainda não configurou a chave pelo painel, tenta usar o valor
-// padrão de config.local.js (arquivo local, fora do git) como conveniência.
-// Falha em silêncio se o arquivo não existir — não é obrigatório.
+// Falha em silêncio se config.local.js não existir — é só uma conveniência.
 async function semearChaveDoConfigLocal() {
   try {
     const resp = await fetch(chrome.runtime.getURL("config.local.js"));

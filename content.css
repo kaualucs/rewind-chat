@@ -1,8 +1,3 @@
-/* ==========================================================================
-   Rewind Chat — Next Fit
-   Estilos do botão flutuante e do painel injetados na tela do Freshchat.
-   Tudo prefixado com "rwc-" para não colidir com o CSS da página.
-   ========================================================================== */
 :root {
   --rwc-bg: #2a1547;
   --rwc-bg-2: #351b58;
@@ -32,7 +27,6 @@
   font-family: "Segoe UI", -apple-system, Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* ---------- Botão inline (encaixado na barra de ações do atendimento) ---------- */
 .rwc-inline-btn {
   all: unset;
   box-sizing: border-box;
@@ -63,7 +57,6 @@
   cursor: progress !important;
 }
 
-/* ---------- Painel lateral ---------- */
 #rwc-panel {
   position: fixed;
   top: 0;
@@ -144,7 +137,6 @@
   border-color: var(--rwc-magenta);
 }
 
-/* ---------- Configurações ---------- */
 .rwc-settings {
   display: flex;
   flex-direction: column;
@@ -207,7 +199,6 @@
   filter: brightness(1.06);
 }
 
-/* ---------- Corpo do painel ---------- */
 .rwc-body {
   flex: 1;
   min-height: 0;
@@ -288,7 +279,6 @@
   }
 }
 
-/* ---------- Resultado ---------- */
 .rwc-result {
   flex-shrink: 0;
   background: var(--rwc-surface);
