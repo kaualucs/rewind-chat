@@ -4,7 +4,7 @@ Extensão de navegador (Chrome, Manifest V3) desenvolvida pela **Next Fit** como
 
 A extensão lê a conversa diretamente da tela do Freshchat e gera **resumos automáticos do atendimento** — em nível breve, normal ou detalhado — usando a API Gemini (Google Generative Language API).
 
-## ✨ Funcionalidades
+##  Funcionalidades
 
 - Leitura automática do conteúdo da conversa exibida na tela do Freshchat/Freshworks CRM.
 - Geração de resumos em três níveis de detalhamento:
@@ -14,14 +14,14 @@ A extensão lê a conversa diretamente da tela do Freshchat e gera **resumos aut
 - Integração com a API do Google Gemini para geração dos resumos.
 - Interface leve, injetada diretamente na página do Freshchat (via content script).
 
-## 🧩 Tecnologias
+##  Tecnologias
 
 - **Manifest V3** (extensão de navegador)
 - JavaScript (background service worker + content script)
 - CSS (estilização do conteúdo injetado)
 - API Gemini — `generativelanguage.googleapis.com`
 
-## 📁 Estrutura do projeto
+##  Estrutura do projeto
 
 ```
 rewind-chat/
@@ -33,7 +33,7 @@ rewind-chat/
 └── .gitignore
 ```
 
-## 🔐 Permissões
+##  Permissões
 
 | Permissão | Motivo |
 |---|---|
@@ -46,7 +46,7 @@ O content script é executado apenas em páginas que correspondem a:
 https://*.myfreshworks.com/crm/messaging/*
 ```
 
-## 🚀 Instalação (modo desenvolvedor)
+##  Instalação (modo desenvolvedor)
 
 1. Clone este repositório:
    ```bash
@@ -57,11 +57,11 @@ https://*.myfreshworks.com/crm/messaging/*
 4. Clique em **Carregar sem compactação** e selecione a pasta do repositório clonado.
 5. Acesse o Freshchat/Freshworks CRM normalmente — a extensão será ativada automaticamente na tela de atendimento.
 
-## ⚙️ Configuração
+##  Configuração
 
 A extensão depende de uma chave de API do **Google Gemini** para gerar os resumos. Configure a chave conforme indicado na interface da extensão (armazenada via `chrome.storage`).
 
-## 📌 Sobre
+##  Sobre
 
 Ferramenta interna desenvolvida pela **Next Fit** para uso da equipe de suporte, com o objetivo de reduzir o tempo gasto na elaboração manual de resumos de atendimento.
 
