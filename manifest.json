@@ -8,7 +8,8 @@
   "host_permissions": [
     "https://generativelanguage.googleapis.com/*",
     "https://*.freshchat.com/*",
-    "https://*.myfreshworks.com/*"
+    "https://*.myfreshworks.com/*",
+    "https://*.amazonaws.com/*"
   ],
   "background": {
     "service_worker": "background.js"

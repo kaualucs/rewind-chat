@@ -5,7 +5,6 @@ async function obterChaveSalva() {
   return geminiKey || "";
 }
 
-// Falha em silêncio se config.local.js não existir — é só uma conveniência.
 async function semearChaveDoConfigLocal() {
   try {
     const resp = await fetch(chrome.runtime.getURL("config.local.js"));
@@ -20,8 +19,6 @@ async function semearChaveDoConfigLocal() {
   }
 }
 
-// Converte em base64 sem usar spread (arquivos de áudio maiores estourariam
-// a pilha de chamadas do String.fromCharCode(...bytes)).
 function arrayBufferParaBase64(buffer) {
   const bytes = new Uint8Array(buffer);
   const TAMANHO_BLOCO = 0x8000;
@@ -32,14 +29,33 @@ function arrayBufferParaBase64(buffer) {
   return btoa(binario);
 }
 
-// O content script só manda a URL do áudio (placeholder {audioUrl}); o
-// download precisa acontecer aqui porque um fetch cross-origin feito pelo
-// content script ainda esbarra no CSP/CORS da própria página do Freshchat.
+const MIME_TYPES_AUDIO_POR_EXTENSAO = {
+  ogg: "audio/ogg",
+  oga: "audio/ogg",
+  mp3: "audio/mp3",
+  wav: "audio/wav",
+  aac: "audio/aac",
+  aiff: "audio/aiff",
+  flac: "audio/flac",
+  m4a: "audio/aac",
+};
+
+// O S3 costuma devolver content-type genérico (ex: application/ogg), que o
+// Gemini rejeita. A extensão do arquivo na URL é mais confiável.
+function mimeTypeDoAudio(url, contentType) {
+  const extensao = (url.split("?")[0].split(".").pop() || "").toLowerCase();
+  if (MIME_TYPES_AUDIO_POR_EXTENSAO[extensao]) {
+    return MIME_TYPES_AUDIO_POR_EXTENSAO[extensao];
+  }
+  if (contentType && contentType.startsWith("audio/")) return contentType;
+  return "audio/ogg";
+}
+
 async function baixarAudioBase64(url) {
   const resp = await fetch(url, { credentials: "include" });
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   const buffer = await resp.arrayBuffer();
-  const mimeType = resp.headers.get("content-type") || "audio/ogg";
+  const mimeType = mimeTypeDoAudio(url, resp.headers.get("content-type"));
   return { base64: arrayBufferParaBase64(buffer), mimeType };
 }
 
@@ -107,7 +123,7 @@ chrome.runtime.onMessage.addListener((mensagem, _sender, sendResponse) => {
       const geminiKey = existente || (await semearChaveDoConfigLocal());
       sendResponse({ geminiKey });
     })();
-    return true; // resposta assíncrona
+    return true;
   }
 
   if (mensagem?.type === "rwc-gerar-resumo") {
@@ -130,7 +146,7 @@ chrome.runtime.onMessage.addListener((mensagem, _sender, sendResponse) => {
         });
       }
     })();
-    return true; // resposta assíncrona
+    return true;
   }
 
   return false;

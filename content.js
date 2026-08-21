@@ -439,9 +439,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     return botao;
   }
 
-  // Com o FreshTools instalado, o botão fica logo após o "Copiar conversa".
-  // Sem ele, usamos exatamente o ponto em que o FreshTools o criaria: antes
-  // do contêiner do menu de três pontos. Assim não depende da extensão.
   function encontrarPontoDeInsercao() {
     const porId = document.getElementById("fd-copy-ai-conversation");
     if (porId) return { referencia: porId, posicao: "afterend" };
@@ -454,8 +451,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
     return null;
   }
 
-  // O Freshworks recria o cabeçalho da conversa com frequência. Mantemos o
-  // launcher no mesmo fluxo dos controles nativos para ele acompanhá-los.
   function posicionarBotao() {
     const ponto = encontrarPontoDeInsercao();
     if (!ponto) {
@@ -474,7 +469,6 @@ Traga o máximo de detalhe relevante sobre o CONTEÚDO conversado. Se algum tóp
         ? botaoEl.previousElementSibling === referencia
         : botaoEl.nextElementSibling === referencia;
 
-    // Reinsere somente se o Freshworks tiver trocado a âncora ou seu container.
     if (!estaNoLugar) {
       referencia.insertAdjacentElement(posicao, botaoEl);
     }
